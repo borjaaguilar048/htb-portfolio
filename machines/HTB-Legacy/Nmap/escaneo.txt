@@ -1,1 +1,29 @@
 
+nmap -p- -sS -sC -sV --min-rate 5000 10.10.10.4
+
+PORT    STATE SERVICE      VERSION
+139/tcp open  netbios-ssn  Microsoft Windows netbios-ssn
+445/tcp open  microsoft-ds Windows XP microsoft-ds
+
+Host script results:
+| smb-os-discovery:
+|   OS: Windows XP (Windows 2000 LAN Manager)
+|   Computer name: LEGACY
+|   NetBIOS computer name: LEGACY\x00
+|   Workgroup: HTB
+|_  System time: 2026-02-03T12:10:21+00:00
+
+| smb-security-mode:
+|   Account used: guest
+|   Authentication level: user
+|   Challenge/response: supported
+|_  Message signing: disabled (dangerous, but default)
+
+Por aqui la parte importante del escaneo realizado.
+
+El escaneo de puertos revela que el sistema objetivo expone los servicios
+SMB a través de los puertos 139 y 445, lo cual es característico de sistemas
+Windows antiguos
+
+SMB ha sido históricamente un vector de ataque crítico en sistemas Windows,
+especialmente en versiones antiguas sin parches de seguridad.
