@@ -14,7 +14,7 @@ Blue, aunque posiblemente sea la máquina más simple en Hack The Box, demuestra
 
 ---
 
-## Anamlisis
+## Analisis
 
 Se encontro una vulnerabilidad con nmap y el siguiente paso fue buscar informacion en internet sobre dicha vulnerabilidad y buscar exploits disponibles con metaexploit
 
