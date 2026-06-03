@@ -1,1 +1,94 @@
+1. Reconocimiento y Verificación de Conectividad
 
+El proceso inicia validando la disponibilidad del host objetivo en la red mediante el envío de un paquete ICMP echo request (ping). 
+Esta prueba preliminar permite confirmar que el dispositivo está activo y deducir detalles iniciales sobre el sistema operativo.
+
+ping -c 1 10.129.10.234
+PING 10.129.10.234 (10.129.10.234) 56(84) bytes of data.
+64 bytes from 10.129.10.234: icmp_seq=1 ttl=63 time=47.9 ms
+
+--- 10.129.10.234 ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 47.877/47.877/47.877/0.000 ms
+
+Análisis: El host responde de manera correcta y con baja latencia (~47.9 ms). 
+El valor del TTL (63) sugiere que el sistema operativo base de la máquina objetivo es una distribución Linux/Unix 
+(considerando el decremento estándar de un salto de red sobre un TTL inicial de 64).
+
+2. Escaneo de Puertos y Enumeración de Servicios
+
+Con la finalidad de identificar los vectores de ataque y puertos expuestos, se lanza un escaneo completo sobre la totalidad del rango TCP (65535 puertos) empleando nmap, 
+incluyendo detección de versiones de servicios (-sV).
+
+nmap -sV -p- 10.129.10.234
+Starting Nmap 7.95 ( https://nmap.org ) at 2026-06-03 17:45 EDT
+Nmap scan report for 10.129.10.234
+Host is up (0.050s latency).
+Not shown: 65534 closed tcp ports (reset)
+PORT   STATE SERVICE VERSION
+21/tcp open  ftp     vsftpd 3.0.3
+Service Info: OS: Unix
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 30.66 seconds
+
+Resultados del escaneo: Se identifica un único punto de entrada expuesto:
+
+    Puerto 21/TCP: Ejecuta un servicio FTP gestionado por el daemon vsftpd 3.0.3. El campo de información adicional reconfirma el uso de un sistema operativo Unix.
+
+3. Fase de Investigación y Análisis del Servicio
+
+El daemon vsftpd (Very Secure FTP Daemon) destaca habitualmente por su estabilidad, pero la versión específica detectada (3.0.3) cuenta con consideraciones críticas de seguridad que deben analizarse:
+
+    Deficiencia de Diseño (Protocolo FTP): De forma nativa, el protocolo FTP clásico es inseguro, puesto que transmite las credenciales de acceso y los datos transferidos en texto plano por la red, 
+exponiendo la información a ataques de interceptación (Sniffing).
+
+    Vulnerabilidad Conocida (CVE-2021-30047): Esta versión es susceptible a ataques de Denegación de Servicio (DoS). Un atacante remoto puede agotar el límite de conexiones concurrentes permitidas, 
+interrumpiendo la disponibilidad del servicio. Esto suele mitigarse aplicando restricciones de conexiones por IP en el archivo vsftpd.conf.
+
+4. Explotación y Obtención del Objetivo (Flag)
+
+Durante la fase de verificación manual, comprobamos si el servidor cuenta con una mala configuración común: la admisión de conexiones anónimas (Anonymous Login).
+
+Tratamos de autenticarnos con el usuario anonymous y una contraseña vacía. Al acceder de manera exitosa, realizamos una enumeración del directorio mediante el comando ls 
+y procedemos a la extracción del archivo objetivo.
+
+ftp 10.129.10.234
+Connected to 10.129.10.234.
+220 (vsFTPd 3.0.3)
+Name (10.129.10.234:kali): anonymous
+331 Please specify the password.
+Password: 
+230 Login successful.
+Remote system type is UNIX.
+Using binary mode to transfer files.
+
+ftp> ls
+229 Entering Extended Passive Mode (|||22610|)
+150 Here comes the directory listing.
+-rw-r--r--    1 0        0              32 Jun 04  2021 flag.txt
+226 Directory send OK.
+
+ftp> get flag.txt
+local: flag.txt remote: flag.txt
+229 Entering Extended Passive Mode (|||18757|)
+150 Opening BINARY mode data connection for flag.txt (32 bytes).
+100% |****************************************|    32       30.78 KiB/s    00:00 ETA
+226 Transfer complete.
+32 bytes received in 00:00 (0.61 KiB/s)
+
+Análisis de la intrusión:
+
+    El servidor concede acceso legítimo a usuarios no autenticados bajo la identidad anonymous.
+
+    Se detecta un archivo con privilegios de lectura denominado flag.txt.
+
+    Dado que la shell del cliente FTP no interpreta el comando cat de forma directa, se emplea el comando get para transferir exitosamente el archivo a nuestra máquina local para su posterior lectura.
+
+5. Recomendaciones de Mitigación
+
+Para securizar este vector de ataque, se sugieren las siguientes acciones inmediatas:
+
+    Deshabilitar el acceso anónimo: Modificar el archivo de configuración principal de FTP (/etc/vsftpd.conf) y asegurar que la directiva esté configurada en: anonymous_enable=NO.
+
+    Implementar cifrado de canal: Reemplazar el uso de FTP plano por protocolos seguros como SFTP (SSH File Transfer Protocol) o FTPS (FTP sobre TLS) para evitar fugas de información.
