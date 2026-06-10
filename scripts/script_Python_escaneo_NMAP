@@ -10,3 +10,67 @@ Características
 Uso
 ```bash
 python3 htb_recon.py -t <IP_OBJETIVO>Script simple en Python para automatizar el reconocimiento inicial en máquinas de Hack The Box (enfocado en Starting Point).
+
+codigo:
+
+import subprocess
+import argparse
+import sys
+from datetime import datetime
+
+def parse_arguments():
+    """Manejo de argumentos desde la terminal."""
+    parser = argparse.ArgumentParser(
+        description="HTB Recon Script v1.0 - Automatización básica de Nmap para Starting Point."
+    )
+    parser.add_argument(
+        "-t", "--target", 
+        required=True, 
+        help="Dirección IP de la máquina objetivo de Hack The Box"
+    )
+    return parser.parse_args()
+
+def run_nmap(target_ip):
+    """Ejecuta Nmap y muestra la salida en tiempo real."""
+    print("-" * 60)
+    print(f"[*] Iniciando escaneo de reconocimiento para: {target_ip}")
+    print(f"[*] Hora de inicio: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print("-" * 60)
+
+    # Comando ideal para Starting Point:
+    # -sV (Versiones), -sC (Scripts por defecto), -v (Verborreico para ver puertos según se descubren)
+    comando = ["nmap", "-sV", "-sC", "-v", target_ip]
+
+    try:
+        # Ejecutamos el comando y capturamos la salida en tiempo real
+        proceso = subprocess.Popen(
+            comando, 
+            stdout=subprocess.PIPE, 
+            stderr=subprocess.PIPE, 
+            text=True
+        )
+
+        # Leemos línea por línea lo que Nmap va escupiendo en la terminal
+        while True:
+            linea = proceso.stdout.readline()
+            if linea == '' and proceso.poll() is not None:
+                break
+            if linea:
+                print(linea.strip())
+
+        # Esperamos a que el proceso termine por completo
+        proceso.wait()
+        print("\n" + "-" * 60)
+        print("[+] Escaneo finalizado correctamente.")
+        print("-" * 60)
+
+    except FileNotFoundError:
+        print("\n[-] Error: Nmap no está instalado o no se encuentra en el PATH.")
+        sys.exit(1)
+    except KeyboardInterrupt:
+        print("\n[-] Escaneo cancelado por el usuario (Ctrl+C).")
+        sys.exit(0)
+
+if __name__ == "__main__":
+    args = parse_arguments()
+    run_nmap(args.target)
