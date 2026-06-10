@@ -1,1 +1,12 @@
 
+Script simple en Python para automatizar el reconocimiento inicial en máquinas de Hack The Box (enfocado en Starting Point).
+
+Características
+
+- Ejecuta escaneo de servicios (`-sV`) y scripts básicos (`-sC`).
+- Modo verborreico (`-v`) integrado para ver los puertos en tiempo real.
+- Manejo de argumentos por consola.
+
+Uso
+```bash
+python3 htb_recon.py -t <IP_OBJETIVO>Script simple en Python para automatizar el reconocimiento inicial en máquinas de Hack The Box (enfocado en Starting Point).
